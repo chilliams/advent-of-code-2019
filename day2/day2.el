@@ -51,8 +51,7 @@
       (when (eq result nil)
         (let ((op (opcode (get-op i table))))
           (cond ((equal op "finish")
-                 (setq result (mapcar (lambda (n) (gethash n table))
-                                      (number-sequence 0 (length program)))))
+                 (setq result (gethash 0 table)))
                 ((equal op "bad")
                  (setq result '("bad opcode")))
                 (t (let* ((apos (get-apos i table))
@@ -61,7 +60,7 @@
                           (b (gethash bpos table))
                           (slot (get-out i table)))
                      (puthash slot (funcall op a b) table))))))))
-  (first result))
+  result)
 
 
 (run (parse-input "1,9,10,3,2,3,11,0,99,30,40,50"))
