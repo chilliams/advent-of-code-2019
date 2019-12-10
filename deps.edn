@@ -1,1 +1,2 @@
-{:deps {org.clojure/core.async {:mvn/version "0.6.532"}}}
+{:deps {org.clojure/core.async {:mvn/version "0.6.532"}
+        net.mikera/core.matrix {:mvn/version "0.62.0"}}}
