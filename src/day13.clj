@@ -5,9 +5,8 @@
 (defn parse-input [input-string]
   (map read-string (string/split input-string #",")))
 
-(-> "day13/input"
-    slurp
-    parse-input)
+(defn get-input []
+  (read-string (read-line)))
 
 (defn parse-instruction [n]
   (let [opcode (mod n 100)
@@ -40,7 +39,7 @@
   (let [table (program-to-table program)
         *i (atom 0)
         *relative-base (atom 0)]
-    (fn [input]
+    (fn [input-fn]
       (let [instruction (parse-instruction (.get table @*i))
             opcode (first instruction)
             m1 (second instruction)
@@ -63,7 +62,7 @@
                 nil)
 
               (= opcode 3)
-              (let [in input]
+              (let [in (input-fn)]
                 (put-val table (inc @*i) m1 in)
                 (swap! *i #(+ 2 %))
                 nil)
@@ -116,13 +115,13 @@
               (= opcode 99)
               :finished)))))
 
-(defn make-game [program]
+(defn make-game [program input-fn]
   (let [*finished (atom false)]
     (fn []
       (if @*finished :finished
           (let [*result (atom nil)]
             (while (nil? @*result)
-              (let [temp (program nil)]
+              (let [temp (program input-fn)]
                 (when-not (nil? temp)
                   (when (= temp :finished)
                     (reset! *finished true))
@@ -137,27 +136,49 @@
 (defn test-game []
   (make-fake-game [1 2 3 6 5 4 :finished]))
 
-(defn display [game]
-  (let [*x (atom (game))
-        m (TreeMap.)]
+(defn run-game [game tm]
+  (let [*x (atom (game))]
     (while (not= @*x :finished)
       (let [x @*x
             y (game)
             tile-id (game)]
-        (.put m [x y] tile-id)
+        (if (and (= x -1) (= y 0)) (println tile-id)
+            (.put tm [x y] tile-id))
         (reset! *x (game))))
-    m))
+    tm))
 
-(display (test-game))
-
-(defn real-game []
+(defn real-game [input-fn]
   (-> "day13/input"
       slurp
       parse-input
       make-program
-      make-game))
+      (make-game input-fn)))
 
-(println
- (count
-  (filter (partial = 2)
-          (.values (display (real-game))))))
+(defn display-state [tm]
+  (let [*ball-x (atom nil)
+        *paddle-x (atom nil)]
+    (doseq [y (range 30)]
+      (doseq [x (range 50)]
+        (let [v (.get tm [x y])]
+          (when (= v 4)
+            (reset! *ball-x x))
+          (when (= v 3)
+            (reset! *paddle-x x))
+          (if (or (= 0 v) (nil? v)) (print " ")
+              (print v))))
+      (println))
+    [@*ball-x @*paddle-x]))
+
+(defn game-input [tm]
+  (fn []
+    (let [[ball-x paddle-x] (display-state tm)]
+      (flush)
+      (cond (> ball-x paddle-x) 1
+            (< ball-x paddle-x) -1
+            :else 0))))
+
+(defn -main []
+  (let [tm (TreeMap.)
+        input-fn (game-input tm)
+        game (real-game input-fn)]
+    (display-state (run-game game tm))))
